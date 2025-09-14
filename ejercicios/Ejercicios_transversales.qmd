@@ -1,0 +1,232 @@
+# **Ejercicios transversales**
+
+## **Clase 2:**
+
+#### Lectura de datos meteorológicos: 
+
+*Metadatos:*
+
+```{r}
+metadatos_url <- 'https://raw.githubusercontent.com/rse-r/intro-programacion/main/datos/metadatos_completos.csv'
+metadatos_archivo <- "datos/metadatos_completos.csv"
+download.file(url = metadatos_url, destfile = metadatos_archivo)
+```
+
+```{r}
+library(readr)
+metadatos <- read_csv('../datos/metadatos_completos.csv')
+```
+
+```{r}
+str(metadatos)
+```
+
+Tiene 11 columnas (variables). 9 son variables cualitativas, tipo de datos chr (string), y 3 son variables cuantitativas continuas. Hay 258 registros (observaciones).
+
+*Estación1 NH0472:*
+
+```{r}
+estación1_url <- 'https://raw.githubusercontent.com/rse-r/intro-programacion/main/datos/NH0472.csv'
+estacion1_archivo <- '../datos/NH0472.csv'
+download.file(url=estación1_url, destfile= estacion1_archivo)
+```
+
+```{r}
+estacion1 <- read_csv('../datos/NH0472.csv')
+```
+
+```{r}
+str(estacion1)
+```
+
+35 columnas
+
+20425 registros/observaciones
+
+*Estación2 NH0910 :*
+
+```{r}
+estacion2_url <- 'https://raw.githubusercontent.com/rse-r/intro-programacion/main/datos/NH0910.csv'
+estacion2_archivo <- 'datos/NH0910.csv'
+download.file(url=estacion2_url, destfile=estacion2_archivo)
+```
+
+```{r}
+estacion2 <- read_csv('../datos/NH0910.csv')
+```
+
+```{r}
+str(estacion2)
+```
+
+*Estacion3 NH0046:*
+
+```{r}
+estacion3_url <- 'https://raw.githubusercontent.com/rse-r/intro-programacion/main/datos/NH0046.csv'
+estacion3_archivo <- 'datos/NH0046.csv'
+download.file(url=estacion3_url, destfile=estacion3_archivo)
+```
+
+```{r}
+estacion3 <- read_csv('../datos/NH0046.csv')
+```
+
+```{r}
+library(dplyr)
+glimpse(estacion3)
+```
+
+35 columnas
+
+17041 resgistros
+
+*Estación4 NH0098:*
+
+```{r}
+estacion4_url <- 'https://raw.githubusercontent.com/rse-r/intro-programacion/main/datos/NH0098.csv'
+estacion4_archivo <- 'datos/NH0098.csv'
+download.file(url=estacion4_url, destfile = estacion4_archivo)
+```
+
+```{r}
+estacion4 <- read_csv('../datos/NH0098.csv')
+```
+
+```{r}
+glimpse(estacion4)
+```
+
+*Estacion5 NH0437:*
+
+```{r}
+estacion5_url=  'https://raw.githubusercontent.com/rse-r/intro-programacion/main/datos/NH0437.csv'
+estacion5_archivo= 'datos/NH0437.csv'
+download.file(url= estacion5_url, destfile = estacion5_archivo)
+
+```
+
+```{r}
+estacion5 <- read_csv('../datos/NH0437.csv')
+```
+
+```{r}
+glimpse(estacion5)
+```
+
+#### Exploración de los datos:
+
+```{r}
+library(dplyr)
+estaciones <- rbind( estacion1, estacion2, estacion3, estacion4, estacion5)
+```
+
+Preguntas
+
+¿Cuántas observaciones de temperatura se hicieron en cada estación?
+
+```{r}
+estaciones|>
+  count(id)
+```
+
+Con count(id), se cuenta la cantidad de observaciones dentro de estaciones que tiene cada id (id siendo una estación).
+
+¿Cuál es la temperatura mínima registrada y la máxima registrada en cada estación?
+
+```{r}
+estaciones|>
+  group_by(id)|>
+  summarise(`temperatura mínima`= min(temperatura_abrigo_150cm, na.rm = T),
+            `temperatura máxima`= max(temperatura_abrigo_150cm, na.rm = T))
+```
+
+#Hice el máximo y el mínimo de la temperatura abrigo 150cm (había muchas no sabia cuál quería la consigna, además la otras estaban vacias). Es necesario el na.rm = T, debido a que sino el resultado sería NA, debido a datos faltantes.
+
+¿Cuál es el promedio de la temperatura de abrigo a 150 cm en cada estación? ¿Y el desvío estandar? Pista: la mayoría de las funciones tienen un argumento para sacar los NA del cálculo, revisá la documentación de mean() y de sd().
+
+```{r}
+estaciones|>
+  group_by(id)|>
+  summarise(`temperatura promedio de abrigo 150cm`= mean(temperatura_abrigo_150cm, na.rm = T),
+            `desvio estándar de temperatura abrigo 150cm`= sd(temperatura_abrigo_150cm, na.rm = T))
+```
+
+¿Cuál es la proporción de NA en temperatura de abrigo a 150 cm? Pista: podés calcular la proporción como cantidad de NA dividido la cantidad total de observaciones. La función is.na() devuelve TRUE si el valor es un NA, al mismo tiempo TRUE es igual a 1 (así es como R lo interpreta) por lo que sum(is.na(variable)) te va a dar la cantidad de NA en esa variable.
+
+```{r}
+estaciones|>
+  group_by(id)|>
+  summarise(`cantidad de NA en temperatura abrigo 150 cm`= sum(is.na(temperatura_abrigo_150cm)),
+            `proporción de NA en temperatura abrigo 150 cm`= sum(is.na(temperatura_abrigo_150cm))/n())
+```
+
+¿Cuál es el promedio anual de la temperatura de abrigo a 150 cm en cada estación? Pista, podés extraer el año de la variable fecha con anio = year(fecha) y usar esa nueva variable para agrupar los datos.
+
+```{r}
+estaciones|>
+  mutate(anio=lubridate::year(fecha))|>
+  group_by(anio)|>
+  summarise(`promedio anual de la temperatura de abrigo a 150 cm`= mean(temperatura_abrigo_150cm, na.rm = T))
+```
+
+¿Cuál es la precipitación acumulada mensual en cada estación? Pista: la precipitación acumulada mensual es la suma de la precipitación en cada mes. En este caso necesitas agrupar los datos por año y mes, una posibilidad es usar floor_date(fecha, "month").
+
+```{r}
+estaciones|>
+  group_by(mes=lubridate::floor_date(fecha, "month"))|>
+  summarise(`precipitación acumulada mensual`= sum(precipitacion_pluviometrica, na.rm=T))
+  
+```
+
+## Clase 3:
+#### Gráficos:
+Sigamos analizando los datos de estaciones meteorológicas.
+```{r}
+library(ggplot2)
+```
+
+
+Graficá la temperatura de abrico para la estación NH0437 (tendrías que filtrar los datos para quedarte solo con esta estación). Sumá una regresión linea, ¿se mentiene constante la temperatura media con el tiempo o cambia?
+```{r}
+# Lo relacione por mes:
+estaciones|>
+  filter(id == 'NH0437')|>
+  ggplot()+
+   aes(x=temperatura_abrigo_150cm, y= lubridate::floor_date(fecha, "month"), color=id)+
+   labs( x= 'temperatura de abrigo', y='tiempo(meses)', title= 'temperatura de abrico para la estación NH0437')+
+   geom_line()+
+   geom_smooth(method = 'loess', color='black')
+
+
+```
+
+
+
+
+Calculá el promedio mensual de la temperatura de abrigo para cada estación y gráfica el resultado. 
+```{r}
+estaciones|>
+  group_by(id, mes=lubridate::floor_date(fecha, "month"))|>
+  summarise(`promedio mensual de tem abrigo 150cm`= mean(temperatura_abrigo_150cm, na.rm=T))|>
+  ggplot(aes(x=`promedio mensual de tem abrigo 150cm`, y=mes, color=id))+
+  geom_line()+
+  facet_wrap(~id)
+  
+```
+
+
+
+¿Cuál es la relación entre la temperatura de abrigo y la humedad? Hacé un gráfico de puntos que muestre la relación, podés sumar un suavisado (opcional). Para la humedad utilizá la varable humedad_media_8_14_20.
+```{r}
+estaciones|>
+  ggplot(aes(x=humedad_media_8_14_20, y=temperatura_abrigo_150cm))+
+  labs(x= 'Humedad', y='Temperatura abrigo', title='Relacion entre humedad y tempreatura abrigo')+
+  geom_point(color='red', size=0.5)+
+  geom_smooth(color='black')
+```
+
+
+
+
+
+
